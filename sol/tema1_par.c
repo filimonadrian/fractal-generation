@@ -11,6 +11,7 @@ char *in_filename_julia;
 char *in_filename_mandelbrot;
 char *out_filename_julia;
 char *out_filename_mandelbrot;
+int P;
 
 // structura pentru un numar complex
 typedef struct _complex {
@@ -28,10 +29,10 @@ typedef struct _params {
 // citeste argumentele programului
 void get_args(int argc, char **argv)
 {
-	if (argc < 5) {
+	if (argc < 6) {
 		printf("Numar insuficient de parametri:\n\t"
 				"./tema1 fisier_intrare_julia fisier_iesire_julia "
-				"fisier_intrare_mandelbrot fisier_iesire_mandelbrot\n");
+				"fisier_intrare_mandelbrot fisier_iesire_mandelbrot numar_threaduri\n");
 		exit(1);
 	}
 
@@ -39,6 +40,8 @@ void get_args(int argc, char **argv)
 	out_filename_julia = argv[2];
 	in_filename_mandelbrot = argv[3];
 	out_filename_mandelbrot = argv[4];
+	P = atoi(argv[5]);
+
 }
 
 // citeste fisierul de intrare
