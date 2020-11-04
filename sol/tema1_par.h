@@ -28,7 +28,7 @@ typedef struct _params {
 } params;
 
 typedef struct _arguments {
-	params par;
+	params *par;
 	int **result;
 	int width;
 	int height;
