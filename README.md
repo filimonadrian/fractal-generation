@@ -23,8 +23,8 @@
 - **generate_images** function:
   - this is where the magic happens
   - the function receives as parameter **thread_id**
-  - if there is just one thread, all functions (read, allocate, write, free space) are executed sequentially
-  - if there are at least 2 theads the function uses this pattern: 
+  - if there is just **one thread**, all functions (read, allocate, write, free space) are executed sequentially
+  - if there are at **least 2 theads** the function uses this pattern: 
     - **thread 0** *read the file* for the julia_algorithm, *allocate* the *result matrix* and *initialize* the variables
     - all threads will run *julia algorithm* and the *tranformation of coordinates*
     - after calculus, **thread 0** writes the **result in file* and *frees the allocated memory*
