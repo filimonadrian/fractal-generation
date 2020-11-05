@@ -194,7 +194,7 @@ void *generate_images(void *arg) {
 	pthread_barrier_wait(&barrier);
 	
 	// write in the file and free the memory for the first algorithm
-	if (MAX(0, P - 1) == thread_id) {
+	if (thread_id == 0) {
 		write_output_file(out_filename_julia, result, width, height);
 		free_memory(result, height);
 	}
