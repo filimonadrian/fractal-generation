@@ -1,4 +1,5 @@
 #include "tema1_par.h"
+
 pthread_barrier_t barrier;
 
 // citeste argumentele programului
@@ -106,22 +107,8 @@ void *run_julia(void *arg)
 	int height = args->height;
 	int thread_id = args->thread_id;
 	int w, h, i;
-	printf("width: %d height: %d ", width, height);
-	printf("x_min: %lf x_max: %lf y_min: %lf y_max: %lf resolution: %lf\n", par->x_min, par->x_max, par->x_min, par->y_max, par->resolution);
-
-	// for (int i = 0; i < 2000; i++) {
-	// 	for (int j = 0; j < 2000; j++) {
-	// 		printf("%d ", result[j][i]);
-	// 	}
-	// 	printf("\n");
-	// }
-
-
-// for (int i = 0; i < width; i++) {
-// 	for (int j = 0; j < height; j++) {
-// 		printf("h: %d w: %d val: %d\n", j, i, result[i][j]);
-// 	}
-// }
+	// printf("width: %d height: %d ", width, height);
+	// printf("x_min: %lf x_max: %lf y_min: %lf y_max: %lf resolution: %lf\n", par->x_min, par->x_max, par->x_min, par->y_max, par->resolution);
 
 	int start = thread_id * width / P;
 	int end = MIN(((thread_id + 1) * width / P), width);
@@ -146,8 +133,8 @@ void *run_julia(void *arg)
 	}
 
 	int ret = pthread_barrier_wait(&barrier);
-	if (ret) {
-		printf("Cannot wait the threads. Err code: %d\n", ret);
+	if (ret != PTHREAD_BARRIER_SERIAL_THREAD) {
+		printf("Thread %d can't wait!Err code: %d\n", thread_id, ret,);
 	}
 
 	if (thread_id == 0) {
@@ -173,13 +160,14 @@ int main(int argc, char *argv[])
 	// se citesc argumentele programului
 	get_args(argc, argv);
 
-	// declare the threads and the barrier
-	pthread_t tid[P];
+	// declare the threads and init the barrier
 	printf("The number of threads is: %d\n", P);
+	pthread_t tid[P];
 	ret = pthread_barrier_init(&barrier, NULL, P);
 	if (ret) {
-		printf("Cannot init barrier!\n");
+		printf("Can't init");
 	}
+
 	// Julia:
 	// - se citesc parametrii de intrare
 	// - se aloca tabloul cu rezultatul
@@ -222,7 +210,7 @@ int main(int argc, char *argv[])
 
 	write_output_file(out_filename_julia, result, width, height);
 	free_memory(result, height);
-
+	pthread_barrier_destroy(&barrier);
 	// // se asteapta thread-urile
 
 	// // Mandelbrot:
