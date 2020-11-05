@@ -6,9 +6,9 @@
 
 - run parallel implementation: 
   - from ./sol directory: `make && ./tema1_par <input_file_julia> <output_file_julia> <intput_file_mandelbrot> <output_file_mandelbrot> <number_of_threads>`
-- run secvential implementation
+- run sequential implementation
   - from ./skel directory `make && ./tema1 <input_file_julia> <output_file_julia> <intput_file_mandelbrot> <output_file_mandelbrot> <number_of_threads>`
-- to compare the secvential and the parallel resuls:
+- to compare the sequential and the parallel resuls:
   - from ./sol directory: `./test.sh`
 
 ## Implementation details
