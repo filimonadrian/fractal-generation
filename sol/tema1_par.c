@@ -1,7 +1,5 @@
 #include "tema1_par.h"
 
-pthread_barrier_t barrier;
-
 // citeste argumentele programului
 void get_args(int argc, char **argv)
 {
@@ -98,45 +96,30 @@ void free_memory(int **result, int height)
 	free(result);
 }
 
-void *run_julia(void *arg)
+void run_julia(params *par, int **result, int width, int height, int thread_id)
 {
-	arguments *args = (arguments *)arg;
-	params *par = (params*)args->par;
-	int **result = args->result;
-	int width = args->width;
-	int height = args->height;
-	int thread_id = args->thread_id;
 	int w, h, i;
-	// printf("width: %d height: %d ", width, height);
-	// printf("x_min: %lf x_max: %lf y_min: %lf y_max: %lf resolution: %lf\n", par->x_min, par->x_max, par->x_min, par->y_max, par->resolution);
-
 	int start = thread_id * width / P;
 	int end = MIN(((thread_id + 1) * width / P), width);
-
-	printf("thread_id=%d start=%d stop=%d\n", thread_id, start, end);
 
 	for (w = 0; w < width; w++) {
 		for (h = start; h < end; h++) {
 			int step = 0;
-			complex z = { .a = w * par->resolution + par->x_min,
-							.b = h * par->resolution + par->y_min };
+      complex z = { .a = w * par->resolution + par->x_min,
+              .b = h * par->resolution + par->y_min };
 
-			while (sqrt(pow(z.a, 2.0) + pow(z.b, 2.0)) < 2.0 && step < par->iterations) {
-				complex z_aux = { .a = z.a, .b = z.b };
+      while (sqrt(pow(z.a, 2.0) + pow(z.b, 2.0)) < 2.0 && step < par->iterations) {
+        complex z_aux = { .a = z.a, .b = z.b };
 
-				z.a = pow(z_aux.a, 2) - pow(z_aux.b, 2) + par->c_julia.a;
-				z.b = 2 * z_aux.a * z_aux.b + par->c_julia.b;
-				step++;
-			}
+        z.a = pow(z_aux.a, 2) - pow(z_aux.b, 2) + par->c_julia.a;
+        z.b = 2 * z_aux.a * z_aux.b + par->c_julia.b;
+        step++;
+      }
 			result[h][w] = step % 256;
 		}
 	}
 
-	int ret = pthread_barrier_wait(&barrier);
-	if (ret != PTHREAD_BARRIER_SERIAL_THREAD) {
-		printf("Thread %d can't wait!Err code: %d\n", thread_id, ret,);
-	}
-
+	pthread_barrier_wait(&barrier);
 	if (thread_id == 0) {
 		// transforma rezultatul din coordonate matematice in coordonate ecran
 		for (int i = 0; i < height / 2; i++) {
@@ -145,92 +128,124 @@ void *run_julia(void *arg)
 			result[height - i - 1] = aux;
 		}
 	}
+}
+
+void run_mandelbrot(params *par, int **result, int width, int height, int thread_id)
+{
+	int w, h, i;
+	int start = thread_id * width / P;
+	int end = MIN(((thread_id + 1) * width / P), width);
+
+	for (w = 0; w < width; w++) {
+		for (h = start; h < end; h++) {
+			complex c = { .a = w * par->resolution + par->x_min,
+							.b = h * par->resolution + par->y_min };
+			complex z = { .a = 0, .b = 0 };
+			int step = 0;
+
+			while (sqrt(pow(z.a, 2.0) + pow(z.b, 2.0)) < 2.0 && step < par->iterations) {
+				complex z_aux = { .a = z.a, .b = z.b };
+
+				z.a = pow(z_aux.a, 2.0) - pow(z_aux.b, 2.0) + c.a;
+				z.b = 2.0 * z_aux.a * z_aux.b + c.b;
+
+				step++;
+			}
+
+			result[h][w] = step % 256;
+		}
+	}
+
+	pthread_barrier_wait(&barrier);
+	// transforma rezultatul din coordonate matematice in coordonate ecran
+	if (thread_id == 0) {
+		for (i = 0; i < height / 2; i++) {
+			int *aux = result[i];
+			result[i] = result[height - i - 1];
+			result[height - i - 1] = aux;
+		}
+	}
+}
+
+	int width, height;
+	int width_mandelbrot, height_mandelbrot;
+	params par;
+	int **result, **result_mandelbrot;
+
+void *generate_images(void *arg) {
+
+	int thread_id = (long)arg;
+
+	// first thread read the input file and initialize the values
+	if (thread_id == 0) {
+		read_input_file(in_filename_julia, &par);
+		width = (par.x_max - par.x_min) / par.resolution;
+		height = (par.y_max - par.y_min) / par.resolution;
+		result = allocate_memory(width, height);
+	}
+
+	pthread_barrier_wait(&barrier);
+
+  run_julia(&par, result, width, height, thread_id);
+	pthread_barrier_wait(&barrier);
+	
+	// the same thread need to write and free al the memory
+	if (MAX(0, P - 1) == thread_id) {
+		write_output_file(out_filename_julia, result, width, height);
+		free_memory(result, height);
+	}
+
+	// if is more than 1 thread
+	// read in parallel the file
+	if (MAX(0, P - 1) == thread_id) {
+		memset(&par, 0, sizeof(params));
+		read_input_file(in_filename_mandelbrot, &par);
+		width_mandelbrot = (par.x_max - par.x_min) / par.resolution;
+		height_mandelbrot = (par.y_max - par.y_min) / par.resolution;
+		result_mandelbrot = allocate_memory(width_mandelbrot, height_mandelbrot);
+	}
+
+	pthread_barrier_wait(&barrier);
+	
+	run_mandelbrot(&par, result_mandelbrot, width_mandelbrot, height_mandelbrot, thread_id);
+	pthread_barrier_wait(&barrier);
+	
+	if (MAX(0, P - 1) == thread_id) {
+		write_output_file(out_filename_mandelbrot, result_mandelbrot, width_mandelbrot, height_mandelbrot);
+		free_memory(result_mandelbrot, height_mandelbrot);
+	}
 
 	pthread_exit(NULL);
+
 }
 
 int main(int argc, char *argv[])
 {
-	params *par = malloc (sizeof(params));
-
-	int width, height;
-	int **result;
 	int ret = 0;
 
-	// se citesc argumentele programului
+	// read the arguments of the program
 	get_args(argc, argv);
 
 	// declare the threads and init the barrier
-	printf("The number of threads is: %d\n", P);
 	pthread_t tid[P];
 	ret = pthread_barrier_init(&barrier, NULL, P);
 	if (ret) {
-		printf("Can't init");
+		printf("Can't init the barrier!\n");
 	}
 
-	// Julia:
-	// - se citesc parametrii de intrare
-	// - se aloca tabloul cu rezultatul
-	// - se ruleaza algoritmul
-	// - se scrie rezultatul in fisierul de iesire
-	// - se elibereaza memoria alocata
-	read_input_file(in_filename_julia, par);
-
-	width = (par->x_max - par->x_min) / par->resolution;
-	height = (par->y_max - par->y_min) / par->resolution;
-
-	result = allocate_memory(width, height);
-
-	// malloc this struct and fill it with addresses
-	// this arguments will be used by all threads in this form
-	// no need to copy all elements for every thread
-
-	// printf("xmin din par este %lf\n", args->par->x_min);
-	printf("%ld %ld %ld %ld\n", sizeof(par), sizeof(result), sizeof(width), sizeof(height));
-	// printf("%ld\n", sizeof(*args));
-
-	// printf("Numarul de threaduri: %d\n", P);
-	// se creeaza thread-urile
-	arguments *args;// = malloc(sizeof(arguments));
-	for (int i = 0; i < P; i++) {
-		args = malloc(sizeof(arguments));
-		args->par = par;
-		args->result = result;
-		args->width = width;
-		args->height = height;
-		args->thread_id = i;
-		ret = pthread_create(&tid[i], NULL, run_julia, args);
+	// create the threads
+	for (long id = 0; id < P; id++) {
+		ret = pthread_create(&tid[id], NULL, generate_images, (void*)id);
 		if (ret) {
-			printf("Can't create %dth thread\n", i);
+			printf("Can't create %ldth thread\n", id);
 		}
 	}
+
 	for (int i = 0; i < P; i++) {
 		pthread_join(tid[i], NULL);
 	}
 
-	write_output_file(out_filename_julia, result, width, height);
-	free_memory(result, height);
 	pthread_barrier_destroy(&barrier);
-	// // se asteapta thread-urile
-
-	// // Mandelbrot:
-	// // - se citesc parametrii de intrare
-	// // - se aloca tabloul cu rezultatul
-	// // - se ruleaza algoritmul
-	// // - se scrie rezultatul in fisierul de iesire
-	// // - se elibereaza memoria alocata
-	// read_input_file(in_filename_mandelbrot, &par);
-
-	// width = (par.x_max - par.x_min) / par.resolution;
-	// height = (par.y_max - par.y_min) / par.resolution;
-
-	// result = allocate_memory(width, height);
-	// // seg fault at run_mandelbrot, idk why, probably reusage of arguments
-	// run_mandelbrot(&par, result, width, height);
-	// write_output_file(out_filename_mandelbrot, result, width, height);
-	// free_memory(result, height);
-
-
 
 	return 0;
 }
