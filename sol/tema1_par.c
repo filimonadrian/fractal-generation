@@ -98,7 +98,7 @@ void free_memory(int **result, int height)
 
 void run_julia(params *par, int **result, int width, int height, int thread_id)
 {
-	int w, h, i;
+	int w, h;
 	int start = thread_id * width / P;
 	int end = MIN(((thread_id + 1) * width / P), width);
 
@@ -118,21 +118,11 @@ void run_julia(params *par, int **result, int width, int height, int thread_id)
 			result[h][w] = step % 256;
 		}
 	}
-
-	pthread_barrier_wait(&barrier);
-	if (thread_id == 0) {
-		// transforma rezultatul din coordonate matematice in coordonate ecran
-		for (int i = 0; i < height / 2; i++) {
-			int *aux = result[i];
-			result[i] = result[height - i - 1];
-			result[height - i - 1] = aux;
-		}
-	}
 }
 
 void run_mandelbrot(params *par, int **result, int width, int height, int thread_id)
 {
-	int w, h, i;
+	int w, h;
 	int start = thread_id * width / P;
 	int end = MIN(((thread_id + 1) * width / P), width);
 
@@ -155,22 +145,27 @@ void run_mandelbrot(params *par, int **result, int width, int height, int thread
 			result[h][w] = step % 256;
 		}
 	}
-
-	pthread_barrier_wait(&barrier);
-	// transforma rezultatul din coordonate matematice in coordonate ecran
-	if (thread_id == 0) {
-		for (i = 0; i < height / 2; i++) {
-			int *aux = result[i];
-			result[i] = result[height - i - 1];
-			result[height - i - 1] = aux;
-		}
-	}
 }
 
 	int width, height;
 	int width_mandelbrot, height_mandelbrot;
 	params par;
 	int **result, **result_mandelbrot;
+
+// transforma rezultatul din coordonate matematice in coordonate ecran
+void transform_coordinates(int **result, int height, int thread_id) {
+	
+	int i = 0;
+	int len = height/2;
+	int start = thread_id * len / P;
+	int end = MIN((thread_id +1) * len / P, len);
+	
+	for (i = start; i < end; i++) {
+		int *aux = result[i];
+		result[i] = result[height - i - 1];
+		result[height - i - 1] = aux;
+	}
+}
 
 void *generate_images(void *arg) {
 
@@ -187,6 +182,8 @@ void *generate_images(void *arg) {
 	pthread_barrier_wait(&barrier);
 
   run_julia(&par, result, width, height, thread_id);
+	pthread_barrier_wait(&barrier);
+	transform_coordinates(result, height, thread_id);
 	pthread_barrier_wait(&barrier);
 	
 	// the same thread need to write and free al the memory
@@ -208,6 +205,8 @@ void *generate_images(void *arg) {
 	pthread_barrier_wait(&barrier);
 	
 	run_mandelbrot(&par, result_mandelbrot, width_mandelbrot, height_mandelbrot, thread_id);
+	pthread_barrier_wait(&barrier);
+	transform_coordinates(result_mandelbrot, height_mandelbrot, thread_id);
 	pthread_barrier_wait(&barrier);
 	
 	if (MAX(0, P - 1) == thread_id) {
