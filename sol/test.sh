@@ -179,9 +179,9 @@ done
 echo "Teste corecte: $correct/$total"
 
 # se calculeaza acceleratia (este folosit primul test)
-speedup12=$(echo "${seq_times[0]}/${par_times[0]}" | bc -l)
-speedup14=$(echo "${seq_times[0]}/${par_times[1]}" | bc -l)
-speedup24=$(echo "${par_times[0]}/${par_times[1]}" | bc -l)
+speedup12=$(echo "${seq_times[0]}/${par_times[0]}" | sed -r 's/[,]+/./g' | bc -l)
+speedup14=$(echo "${seq_times[0]}/${par_times[1]}" | sed -r 's/[,]+/./g' | bc -l)
+speedup24=$(echo "${par_times[0]}/${par_times[1]}" | sed -r 's/[,]+/./g' | bc -l)
 
 # acceleratia se considera 0 daca testele de scalabilitate nu sunt corecte
 if [ $correct_scalability != 2 ]
@@ -191,17 +191,17 @@ then
 	speedup24=0
 fi
 
-printf "Acceleratie 1-2: %0.2f\n" $speedup12
-printf "Acceleratie 1-4: %0.2f\n" $speedup14
-printf "Acceleratie 2-4: %0.2f\n" $speedup24
+printf "Acceleratie 1-2: %0.2f\n" $(echo "$speedup12" | sed -r 's/[.]+/,/g')
+printf "Acceleratie 1-4: %0.2f\n" $(echo "$speedup14" | sed -r 's/[.]+/,/g')
+printf "Acceleratie 2-4: %0.2f\n" $(echo "$speedup24" | sed -r 's/[.]+/,/g')
 
 # se verifica acceleratia de la secvential la 2 thread-uri
 max=$(echo "${speedup12} > 1.25" | bc -l)
 part=$(echo "${speedup12} > 1.1" | bc -l)
-if [ $max == 1 ]
+if [[ $max == 1 ]]
 then
 	scalability=$((scalability+20))
-elif [ $part == 1 ]
+elif [[ $part == 1 ]]
 then
 	scalability=$((scalability+10))
 	echo "W: Acceleratia de la 1 la 2 thread-uri este prea mica (punctaj partial)"
@@ -212,10 +212,10 @@ fi
 # se verifica acceleratia de la secvential la 4 thread-uri
 max=$(echo "${speedup14} > 2.3" | bc -l)
 part=$(echo "${speedup14} > 1.7" | bc -l)
-if [ $max == 1 ]
+if [[ $max == 1 ]]
 then
 	scalability=$((scalability+20))
-elif [ $part == 1 ]
+elif [[ $part == 1 ]]
 then
 	scalability=$((scalability+10))
 	echo "W: Acceleratia de la 1 la 4 thread-uri este prea mica (punctaj partial)"
