@@ -6,6 +6,7 @@
 #include <pthread.h>
 
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
 char *in_filename_julia;
 char *in_filename_mandelbrot;
@@ -32,4 +33,5 @@ typedef struct _arguments {
 	int **result;
 	int width;
 	int height;
+	int thread_id;
 } arguments;
