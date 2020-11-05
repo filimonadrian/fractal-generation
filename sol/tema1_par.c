@@ -1,4 +1,5 @@
 #include "tema1_par.h"
+pthread_barrier_t barrier;
 
 // citeste argumentele programului
 void get_args(int argc, char **argv)
@@ -146,7 +147,11 @@ void *run_julia(void *arg)
 		}
 	}
 
-	// pthread_barrier_wait(&barrier);
+	int ret = pthread_barrier_wait(&barrier);
+	if (ret) {
+		printf("Cannot wait the threads. Err code: %d\n", ret);
+	}
+
 	// transforma rezultatul din coordonate matematice in coordonate ecran
 	// for (int i = 0; i < height / 2; i++) {
 	// 	int *aux = result[i];
@@ -163,12 +168,18 @@ int main(int argc, char *argv[])
 
 	int width, height;
 	int **result;
-	pthread_t tid[P];
-	pthread_barrier_init(&barrier, NULL, P);
+	int ret = 0;
 
 	// se citesc argumentele programului
 	get_args(argc, argv);
 
+	// declare the threads and the barrier
+	pthread_t tid[P];
+	printf("The number of threads is: %d\n", P);
+	ret = pthread_barrier_init(&barrier, NULL, P);
+	if (ret) {
+		printf("Cannot init barrier!\n");
+	}
 	// Julia:
 	// - se citesc parametrii de intrare
 	// - se aloca tabloul cu rezultatul
@@ -193,7 +204,6 @@ int main(int argc, char *argv[])
 	// printf("Numarul de threaduri: %d\n", P);
 	// se creeaza thread-urile
 	arguments *args;// = malloc(sizeof(arguments));
-	int ret = 0;
 	for (int i = 0; i < P; i++) {
 		args = malloc(sizeof(arguments));
 		args->par = par;
