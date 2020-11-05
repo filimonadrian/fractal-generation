@@ -110,9 +110,9 @@ void *run_julia(void *arg)
 	printf("width: %d height: %d", width, height);
 	printf("x_min: %lf x_max: %lf y_min: %lf y_max: %lf resolution: %lf\n", par->x_min, par->x_max, par->x_min, par->y_max, par->resolution);
 
-	// for (int i = 0; i < 10; i++) {
-	// 	for (int j = 0; j < 10; j++) {
-	// 		printf("%d ", result[i][j]);
+	// for (int i = 0; i < 2000; i++) {
+	// 	for (int j = 0; j < 2000; j++) {
+	// 		printf("%d ", result[j][i]);
 	// 	}
 	// 	printf("\n");
 	// }
@@ -172,8 +172,7 @@ int main(int argc, char *argv[])
 	int **result;
 	int thread_id[P];
 	pthread_t tid[P];
-	// pthread_barrier_init(&barrier, NULL, P);
-
+	pthread_barrier_init(&barrier, NULL, P);
 
 	// se citesc argumentele programului
 	get_args(argc, argv);
@@ -192,11 +191,11 @@ int main(int argc, char *argv[])
 	result = allocate_memory(width, height);
 
 	// put some values in the matrix
-	// for (int i = 0; i < height; i++) {
-	// 	for (int j = 0; j < height; j++) {
-	// 		result[i][j] = 1;
-	// 	}
-	// }
+	for (int i = 0; i < height; i++) {
+		for (int j = 0; j < height; j++) {
+			result[i][j] = 7;
+		}
+	}
 
 	// malloc this struct and fill it with addresses
 	// this arguments will be used by all threads in this form
@@ -222,14 +221,14 @@ int main(int argc, char *argv[])
 			printf("Can't create %dth thread\n", i);
 		}
 	}
+	for (int i = 0; i < P; i++) {
+		pthread_join(tid[0], NULL);
+	}
 
 	write_output_file(out_filename_julia, result, width, height);
 	free_memory(result, height);
 
 	// // se asteapta thread-urile
-	for (int i = 0; i < P; i++) {
-		pthread_join(tid[0], NULL);
-	}
 
 	// // Mandelbrot:
 	// // - se citesc parametrii de intrare
