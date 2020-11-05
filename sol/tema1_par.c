@@ -103,8 +103,9 @@ void *run_julia(void *arg)
 	int **result = args->result;
 	int width = args->width;
 	int height = args->height;
+	int thread_id = args->thread_id;
 	int w, h, i;
-	printf("width: %d height: %d", width, height);
+	printf("width: %d height: %d ", width, height);
 	printf("x_min: %lf x_max: %lf y_min: %lf y_max: %lf resolution: %lf\n", par->x_min, par->x_max, par->x_min, par->y_max, par->resolution);
 
 	// for (int i = 0; i < 2000; i++) {
@@ -121,8 +122,13 @@ void *run_julia(void *arg)
 // 	}
 // }
 
+	int start = thread_id * width / P;
+	int end = MIN(((thread_id + 1) * width / P), width);
+
+	printf("thread_id=%d start=%d stop=%d\n", thread_id, start, end);
+
 	for (w = 0; w < width; w++) {
-		for (h = 0; h < height; h++) {
+		for (h = start; h < end; h++) {
 			int step = 0;
 			complex z = { .a = w * par->resolution + par->x_min,
 							.b = h * par->resolution + par->y_min };
@@ -132,20 +138,21 @@ void *run_julia(void *arg)
 
 				z.a = pow(z_aux.a, 2) - pow(z_aux.b, 2) + par->c_julia.a;
 				z.b = 2 * z_aux.a * z_aux.b + par->c_julia.b;
-
+				pthread_mutex_lock(&mutex);
 				step++;
-				
+				pthread_mutex_unlock(&mutex);
 			}
 			result[h][w] = step % 256;
 		}
 	}
 
+	// pthread_barrier_wait(&barrier);
 	// transforma rezultatul din coordonate matematice in coordonate ecran
-	for (int i = 0; i < height / 2; i++) {
-		int *aux = result[i];
-		result[i] = result[height - i - 1];
-		result[height - i - 1] = aux;
-	}
+	// for (int i = 0; i < height / 2; i++) {
+	// 	int *aux = result[i];
+	// 	result[i] = result[height - i - 1];
+	// 	result[height - i - 1] = aux;
+	// }
 
 	pthread_exit(NULL);
 }
@@ -156,7 +163,6 @@ int main(int argc, char *argv[])
 
 	int width, height;
 	int **result;
-	int thread_id[P];
 	pthread_t tid[P];
 	pthread_barrier_init(&barrier, NULL, P);
 
@@ -176,38 +182,32 @@ int main(int argc, char *argv[])
 
 	result = allocate_memory(width, height);
 
-	// // put some values in the matrix
-	// for (int i = 0; i < height; i++) {
-	// 	for (int j = 0; j < height; j++) {
-	// 		result[i][j] = 7;
-	// 	}
-	// }
-
 	// malloc this struct and fill it with addresses
 	// this arguments will be used by all threads in this form
 	// no need to copy all elements for every thread
-	arguments *args = malloc(sizeof(arguments));
-	args->par = par;
-	args->result = result;
-	args->width = width;
-	args->height = height;
 
 	// printf("xmin din par este %lf\n", args->par->x_min);
 	printf("%ld %ld %ld %ld\n", sizeof(par), sizeof(result), sizeof(width), sizeof(height));
-	printf("%ld\n", sizeof(*args));
+	// printf("%ld\n", sizeof(*args));
 
 	// printf("Numarul de threaduri: %d\n", P);
 	// se creeaza thread-urile
+	arguments *args;// = malloc(sizeof(arguments));
 	int ret = 0;
 	for (int i = 0; i < P; i++) {
-		thread_id[i] = i;
+		args = malloc(sizeof(arguments));
+		args->par = par;
+		args->result = result;
+		args->width = width;
+		args->height = height;
+		args->thread_id = i;
 		ret = pthread_create(&tid[i], NULL, run_julia, args);
 		if (ret) {
 			printf("Can't create %dth thread\n", i);
 		}
 	}
 	for (int i = 0; i < P; i++) {
-		pthread_join(tid[0], NULL);
+		pthread_join(tid[i], NULL);
 	}
 
 	write_output_file(out_filename_julia, result, width, height);
