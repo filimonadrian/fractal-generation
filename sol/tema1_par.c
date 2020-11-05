@@ -149,11 +149,6 @@ void run_mandelbrot(params *par, int **result, int width, int height, int thread
 	}
 }
 
-	int width, height;
-	int width_mandelbrot, height_mandelbrot;
-	params par;
-	int **result, **result_mandelbrot;
-
 // transform the result from mathematical coordinates in screen coordinates
 void transform_coordinates(int **result, int height, int thread_id) {
 	

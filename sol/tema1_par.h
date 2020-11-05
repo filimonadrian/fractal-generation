@@ -14,6 +14,10 @@ char *out_filename_julia;
 char *out_filename_mandelbrot;
 int P = 0;
 pthread_barrier_t barrier;
+int width, height;
+int width_mandelbrot, height_mandelbrot;
+params par;
+int **result, **result_mandelbrot;
 
 // structura pentru un numar complex
 typedef struct _complex {
