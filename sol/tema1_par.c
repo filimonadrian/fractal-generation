@@ -139,9 +139,7 @@ void *run_julia(void *arg)
 
 				z.a = pow(z_aux.a, 2) - pow(z_aux.b, 2) + par->c_julia.a;
 				z.b = 2 * z_aux.a * z_aux.b + par->c_julia.b;
-				pthread_mutex_lock(&mutex);
 				step++;
-				pthread_mutex_unlock(&mutex);
 			}
 			result[h][w] = step % 256;
 		}
@@ -152,12 +150,14 @@ void *run_julia(void *arg)
 		printf("Cannot wait the threads. Err code: %d\n", ret);
 	}
 
-	// transforma rezultatul din coordonate matematice in coordonate ecran
-	// for (int i = 0; i < height / 2; i++) {
-	// 	int *aux = result[i];
-	// 	result[i] = result[height - i - 1];
-	// 	result[height - i - 1] = aux;
-	// }
+	if (thread_id == 0) {
+		// transforma rezultatul din coordonate matematice in coordonate ecran
+		for (int i = 0; i < height / 2; i++) {
+			int *aux = result[i];
+			result[i] = result[height - i - 1];
+			result[height - i - 1] = aux;
+		}
+	}
 
 	pthread_exit(NULL);
 }
