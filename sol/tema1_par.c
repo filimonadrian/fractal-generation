@@ -96,9 +96,6 @@ void free_memory(int **result, int height)
 	free(result);
 }
 
-// ruleaza algoritmul Julia
-// void *run_julia(void *arg)
-// void run_julia(params par, int **result, int width, int height, void *arg)
 void *run_julia(void *arg)
 {
 	arguments *args = (arguments *)arg;
@@ -129,29 +126,18 @@ void *run_julia(void *arg)
 			int step = 0;
 			complex z = { .a = w * par->resolution + par->x_min,
 							.b = h * par->resolution + par->y_min };
-//			printf("step: %d; z.a = %lf, z.b = %lf\n", step, z.a, z.b);
 
 			while (sqrt(pow(z.a, 2.0) + pow(z.b, 2.0)) < 2.0 && step < par->iterations) {
-				// printf("While\n");
-				// printf("cond1 %lf\n", sqrt(pow(z.a, 2.0) + pow(z.b, 2.0)));
-				// printf("step = %d\n", step);
 				complex z_aux = { .a = z.a, .b = z.b };
 
 				z.a = pow(z_aux.a, 2) - pow(z_aux.b, 2) + par->c_julia.a;
 				z.b = 2 * z_aux.a * z_aux.b + par->c_julia.b;
 
 				step++;
-			// printf("endwhile");
 				
 			}
 			result[h][w] = step % 256;
-			// printf("h: %d w: %d val: %d\n", h, w, result[h][w]);
-
-			// printf("new_matrix: %d", result[h][w]);
-			// printf("endforh");
-
 		}
-			// printf("\n");
 	}
 
 	// transforma rezultatul din coordonate matematice in coordonate ecran
@@ -190,12 +176,12 @@ int main(int argc, char *argv[])
 
 	result = allocate_memory(width, height);
 
-	// put some values in the matrix
-	for (int i = 0; i < height; i++) {
-		for (int j = 0; j < height; j++) {
-			result[i][j] = 7;
-		}
-	}
+	// // put some values in the matrix
+	// for (int i = 0; i < height; i++) {
+	// 	for (int j = 0; j < height; j++) {
+	// 		result[i][j] = 7;
+	// 	}
+	// }
 
 	// malloc this struct and fill it with addresses
 	// this arguments will be used by all threads in this form
@@ -209,7 +195,6 @@ int main(int argc, char *argv[])
 	// printf("xmin din par este %lf\n", args->par->x_min);
 	printf("%ld %ld %ld %ld\n", sizeof(par), sizeof(result), sizeof(width), sizeof(height));
 	printf("%ld\n", sizeof(*args));
-	// run_julia(args);
 
 	// printf("Numarul de threaduri: %d\n", P);
 	// se creeaza thread-urile
