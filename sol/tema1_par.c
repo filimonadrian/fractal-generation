@@ -1,6 +1,6 @@
 #include "tema1_par.h"
 
-// citeste argumentele programului
+// read the arguments of the program
 void get_args(int argc, char **argv)
 {
 	if (argc < 6) {
@@ -18,7 +18,7 @@ void get_args(int argc, char **argv)
 
 }
 
-// citeste fisierul de intrare
+// read the input file
 void read_input_file(char *in_filename, params* par)
 {
 	FILE *file = fopen(in_filename, "r");
@@ -40,7 +40,7 @@ void read_input_file(char *in_filename, params* par)
 	fclose(file);
 }
 
-// scrie rezultatul in fisierul de iesire
+// write the result in the output file
 void write_output_file(char *out_filename, int **result, int width, int height)
 {
 	int i, j;
@@ -62,7 +62,7 @@ void write_output_file(char *out_filename, int **result, int width, int height)
 	fclose(file);
 }
 
-// aloca memorie pentru rezultat
+// allocate memory for the result
 int **allocate_memory(int width, int height)
 {
 	int **result;
@@ -85,7 +85,7 @@ int **allocate_memory(int width, int height)
 	return result;
 }
 
-// elibereaza memoria alocata
+// free the allocated memory
 void free_memory(int **result, int height)
 {
 	int i;
@@ -96,6 +96,7 @@ void free_memory(int **result, int height)
 	free(result);
 }
 
+// run julia algorithm
 void run_julia(params *par, int **result, int width, int height, int thread_id)
 {
 	int w, h;
@@ -120,6 +121,7 @@ void run_julia(params *par, int **result, int width, int height, int thread_id)
 	}
 }
 
+// run mandelbrot algorithm
 void run_mandelbrot(params *par, int **result, int width, int height, int thread_id)
 {
 	int w, h;
@@ -152,7 +154,7 @@ void run_mandelbrot(params *par, int **result, int width, int height, int thread
 	params par;
 	int **result, **result_mandelbrot;
 
-// transforma rezultatul din coordonate matematice in coordonate ecran
+// transform the result from mathematical coordinates in screen coordinates
 void transform_coordinates(int **result, int height, int thread_id) {
 	
 	int i = 0;
@@ -167,11 +169,12 @@ void transform_coordinates(int **result, int height, int thread_id) {
 	}
 }
 
+// thread function where read, alloc, calculate, clean and write the result
 void *generate_images(void *arg) {
 
 	int thread_id = (long)arg;
 
-	// first thread read the input file and initialize the values
+	// read the input file and initialize the values in the thread 0
 	if (thread_id == 0) {
 		read_input_file(in_filename_julia, &par);
 		width = (par.x_max - par.x_min) / par.resolution;
@@ -179,36 +182,47 @@ void *generate_images(void *arg) {
 		result = allocate_memory(width, height);
 	}
 
+	// wait untill the values are read and memory is allocated
 	pthread_barrier_wait(&barrier);
 
+	// run julia algorithm
   run_julia(&par, result, width, height, thread_id);
 	pthread_barrier_wait(&barrier);
+
+	// tranform the coordinates of the result in screen-coordinates
 	transform_coordinates(result, height, thread_id);
 	pthread_barrier_wait(&barrier);
 	
-	// the same thread need to write and free al the memory
+	// write in the file and free the memory for the first algorithm
 	if (MAX(0, P - 1) == thread_id) {
 		write_output_file(out_filename_julia, result, width, height);
 		free_memory(result, height);
 	}
 
 	// if is more than 1 thread
-	// read in parallel the file
+	// read in parallel and allocate memory for the second algorithm
 	if (MAX(0, P - 1) == thread_id) {
+		// clean the values for the reused struct
 		memset(&par, 0, sizeof(params));
+		
 		read_input_file(in_filename_mandelbrot, &par);
 		width_mandelbrot = (par.x_max - par.x_min) / par.resolution;
 		height_mandelbrot = (par.y_max - par.y_min) / par.resolution;
 		result_mandelbrot = allocate_memory(width_mandelbrot, height_mandelbrot);
 	}
 
+	// wait untill the values are read and memory is allocated
 	pthread_barrier_wait(&barrier);
 	
+	// run mandelbrot algorithm
 	run_mandelbrot(&par, result_mandelbrot, width_mandelbrot, height_mandelbrot, thread_id);
 	pthread_barrier_wait(&barrier);
+
+	// tranform the coordinates of the result in screen-coordinates
 	transform_coordinates(result_mandelbrot, height_mandelbrot, thread_id);
 	pthread_barrier_wait(&barrier);
 	
+	// first or last thread will write the result in file and free the memory
 	if (MAX(0, P - 1) == thread_id) {
 		write_output_file(out_filename_mandelbrot, result_mandelbrot, width_mandelbrot, height_mandelbrot);
 		free_memory(result_mandelbrot, height_mandelbrot);
