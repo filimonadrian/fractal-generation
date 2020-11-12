@@ -25,13 +25,13 @@
   - the function receives as parameter **thread_id**
   - if there is just **one thread**, all functions (read, allocate, write, free space) are executed sequentially
   - if there are at **least 2 theads** the function uses this pattern: 
-    - **thread 0** *read the file* for the julia_algorithm, *allocate* the *result matrix* and *initialize* the variables
+    - **thread 0** *reads the file* for the julia_algorithm, *allocate* the *result matrix* and *initialize* the variables
     - all threads will run *julia algorithm* and the *tranformation of coordinates*
     - after calculus, **thread 0** writes the **result in file* and *frees the allocated memory*
     - while the **thread 0** finish his job, the **<P - 1> thread** *reads the input file* for the mandelbrot algorithm, *allocate the result matrix* and *initializes the variables*
     - all threads will run *mandelbrot algorithm* and the *tranformation of coordinates*  
     - **<P - 1> thread** will *write the result* in the output file and *free the memory*
 - **transform_coordinates** function:
-  - takes the *result matrix* which contains the mathematical coordinates and transform themn in screen coordinates
+  - takes the *result matrix* which contains the mathematical coordinates and transform them in screen coordinates
 - **run_julia** and **run_mandelbrot**
-  - calculate the *start* and *stop* indices for every thread and uses them in the second for
+  - calculate the *start* and *stop* indices for every thread and uses them in the second for to calculate the images
