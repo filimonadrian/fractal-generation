@@ -100,10 +100,10 @@ void free_memory(int **result, int height)
 void run_julia(params *par, int **result, int width, int height, int thread_id)
 {
 	int w, h;
-	int start = thread_id * width / P;
-	int end = MIN(((thread_id + 1) * width / P), width);
+	int start = thread_id * height / P;
+	int end = MIN(((thread_id + 1) * height / P), height);
 
-	for (w = 0; w < height; w++) {
+	for (w = 0; w < width; w++) {
 		for (h = start; h < end; h++) {
 			int step = 0;
       complex z = { .a = w * par->resolution + par->x_min,
@@ -125,8 +125,8 @@ void run_julia(params *par, int **result, int width, int height, int thread_id)
 void run_mandelbrot(params *par, int **result, int width, int height, int thread_id)
 {
 	int w, h;
-	int start = thread_id * width / P;
-	int end = MIN(((thread_id + 1) * width / P), width);
+	int start = thread_id * height / P;
+	int end = MIN(((thread_id + 1) * height / P), height);
 
 	for (w = 0; w < width; w++) {
 		for (h = start; h < end; h++) {
