@@ -103,7 +103,7 @@ void run_julia(params *par, int **result, int width, int height, int thread_id)
 	int start = thread_id * width / P;
 	int end = MIN(((thread_id + 1) * width / P), width);
 
-	for (w = 0; w < width; w++) {
+	for (w = 0; w < height; w++) {
 		for (h = start; h < end; h++) {
 			int step = 0;
       complex z = { .a = w * par->resolution + par->x_min,
@@ -155,7 +155,7 @@ void transform_coordinates(int **result, int height, int thread_id) {
 	int i = 0;
 	int len = height/2;
 	int start = thread_id * len / P;
-	int end = MIN((thread_id +1) * len / P, len);
+	int end = MIN((thread_id + 1) * len / P, len);
 	
 	for (i = start; i < end; i++) {
 		int *aux = result[i];
